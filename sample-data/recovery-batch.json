@@ -1,0 +1,14 @@
+[
+  { "api_name": "PatientDataAPI", "response_time_ms": 640, "status_code": 200, "records_returned": 52 },
+  { "api_name": "AppointmentAPI", "response_time_ms": 720, "status_code": 200, "records_returned": 36 },
+  { "api_name": "BillingAPI", "response_time_ms": 910, "status_code": 200, "records_returned": 118 },
+  { "api_name": "InventoryAPI", "response_time_ms": 1100, "status_code": 200, "records_returned": 342 },
+  { "api_name": "LabResultsAPI", "response_time_ms": 430, "status_code": 200, "records_returned": 27 },
+  { "api_name": "PrescriptionAPI", "response_time_ms": 580, "status_code": 200, "records_returned": 64 },
+  { "api_name": "InsuranceAPI", "response_time_ms": 350, "status_code": 200, "records_returned": 9 },
+  { "api_name": "AuthAPI", "response_time_ms": 210, "status_code": 200, "records_returned": 1 },
+  { "api_name": "DoctorScheduleAPI", "response_time_ms": 790, "status_code": 200, "records_returned": 24 },
+  { "api_name": "ReferralAPI", "response_time_ms": 270, "status_code": 200, "records_returned": 6 },
+  { "api_name": "ImagingAPI", "response_time_ms": 880, "status_code": 200, "records_returned": 15 },
+  { "api_name": "HealthCheckAPI", "response_time_ms": 85, "status_code": 200, "records_returned": 0 }
+]
