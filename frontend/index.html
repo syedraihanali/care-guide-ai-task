@@ -4,7 +4,17 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Live health and AI-written alerts for the healthcare API integrations." />
     <title>API Monitor</title>
+    <script>
+      // Apply the saved or system theme before first paint, so dark mode never flashes white.
+      try {
+        var saved = localStorage.getItem('api-monitor-theme');
+        var dark = saved === 'dark' || ((!saved || saved === 'system') && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.add(dark ? 'dark' : 'light');
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+      } catch (error) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

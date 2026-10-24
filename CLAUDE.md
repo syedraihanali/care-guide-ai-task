@@ -28,13 +28,16 @@ Keep the "Runtime LLM prompt" section identical to the system prompt and user-me
 - One active alert per API (an incident), enforced by a partial unique index. Repeats increment `occurrences`; a healthy check auto-resolves the alert.
 - Send only metrics to the LLM, never raw payloads (healthcare data).
 - Routes have no `/api` prefix: `POST /monitor`, `GET /alerts`, `GET /apis/status`, `GET /health`.
-- Frontend: typed API client in `src/lib/api.ts`, shared types in `src/types.ts`. Add UI components with `npx shadcn@latest add <name>`, run inside `frontend/`.
+- Frontend: typed API client in `src/lib/api.ts`, shared types in `src/types.ts`, TanStack Query hooks in `src/hooks/` (every query polls every 10 s). Add UI components with `npx shadcn@latest add <name>`, run inside `frontend/`.
+- Severity is the only colour in the UI: the `healthy`, `warning` and `critical` tokens in `src/index.css`, always shown with an icon and a word.
 
 ## Toolchain notes (deliberate, do not "fix")
 
 - The backend uses TypeScript 7; the frontend keeps the TypeScript ~6.0 pinned by create-vite.
 - tsconfig `paths` are set without `baseUrl`, which TypeScript 6 deprecates and 7 removes.
 - npm 12 blocks dependency install scripts. esbuild's is denied in the root `allowScripts`: its binary comes from `@esbuild/win32-x64` and works without it.
+- Dark mode uses our own `ThemeProvider` (`src/components/theme-provider.tsx`), not next-themes, which renders a `<script>` that React 19 warns about in a client-only app. The shadcn `sonner.tsx` imports `useTheme` from `@/hooks/use-theme`.
+- The Vite dev server is pinned to port 5173 (`strictPort`) because the backend's CORS allows exactly that origin.
 
 ## Commands (from the project root)
 
