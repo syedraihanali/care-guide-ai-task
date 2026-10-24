@@ -58,9 +58,120 @@ Read BUILD_SPEC.md carefully. Do Phase 1 (Scaffold) only. Follow the prompt logg
 - Added `docker-compose.yml` (MongoDB 7 with a named volume and a healthcheck), sample batches that cover every detection rule, CLAUDE.md, this prompt log and its docx generator.
 - Verified `npm install`, `npm run db:up`, `npm run dev`, `/health`, both builds and `npm run prompts:docx`, then committed.
 
+### Prompt 2 — Rename the branch, start Phase 2
+
+- **Date and time:** 2026-10-24 19:19 (UTC+06:00)
+- **Phase:** 2 — Backend
+
+```
+rename the branch from master to main, and lets start the phase 2,
+```
+
+**Outcome:**
+
+- Interrupted by the user before any work started; Prompt 3 replaced it.
+- The branch rename it asked for was done as part of Prompt 3: `master` is now `main`.
+
+### Prompt 3 — Phase 2: Backend
+
+- **Date and time:** 2026-10-24 19:19 (UTC+06:00)
+- **Phase:** 2 — Backend
+
+```
+Do Phase 2 (Backend) from BUILD_SPEC.md. Log this prompt. Run every check in the "Done when" list yourself (template mode is fine, there is no API key yet), commit, and summarize.
+```
+
+**Outcome:**
+
+- Built the layered Express 5 backend: a pure detector with per-API thresholds, one incident per API (deduped by a partial unique index, auto-resolved on recovery), a concurrent batch pipeline, and an LLM alert writer with template fallback.
+- Added every endpoint, pino logging, central error handling, graceful shutdown, `backend/.env.example` and the `npm run monitor:file` CLI.
+- Verified in template mode with 86 scripted checks (counts, dedupe, auto-resolve, filters, errors, concurrency, rate limit), and the AI path against a local mock of the OpenAI API (23 checks).
+- Documented the runtime LLM prompt below, renamed the branch to `main`, and committed.
+
 ## Runtime LLM prompt
 
-The exact system prompt and user-message template the backend sends to the LLM. This section is filled in during Phase 2, when the alert writer is built, and is kept in sync with the code.
+The backend sends this to the OpenAI Chat Completions API for every alert that needs text (`backend/src/services/llm/prompts.ts`):
+
+- **Model:** `OPENAI_MODEL` (default `gpt-4o-mini`), temperature 0.2, timeout `LLM_TIMEOUT_MS` with 1 retry
+- **Output:** structured outputs with a strict JSON schema named `alert_texts`: an `alerts` array of `{ id, title, message, likelyCause, suggestedAction }`
+- **Batching:** one call per `LLM_BATCH_SIZE` alerts (default 20)
+- **Privacy:** only the fields in the user message below are sent, never raw payloads
+- **Fallback:** any alert the LLM misses, or returns invalid, gets the deterministic template text instead
+
+### System prompt
+
+```
+You are an SRE assistant on the integration team of a healthcare company. You write the alerts that on-call engineers read when one of the company's APIs misbehaves.
+
+The input is a JSON object with a list of alerts. Each alert has an id, the API name, its severity (warning or critical), occurrences (how many anomalous checks the incident has had so far), the detected issues, the latest metrics, and the thresholds the metrics were checked against. A metric is null when the monitoring data had no valid value for it.
+
+For each alert, write:
+- title: at most 8 words. Name the API and the main problem.
+- message: 1 or 2 sentences, at most 40 words. Name the API, say what went wrong, and give the key numbers exactly as provided (status code, response time in ms, records returned).
+- likelyCause: one sentence on the most likely cause.
+- suggestedAction: one or two concrete steps the on-call engineer can take now, such as checking the upstream provider's status page, inspecting the API's server logs, verifying query filters or pagination, or checking the database connection pool.
+
+Rules:
+- Use only the facts in the input. Never invent numbers, error messages, times or events.
+- Copy numbers exactly as given. Do not round them or change their units.
+- Never state a cause as certain: say "likely" or "possible".
+- Match the tone to the severity: critical alerts are urgent and direct; warnings are calm and factual.
+- If occurrences is greater than 1, say that the problem is recurring.
+- Write plain English: no markdown, emoji or bullet points.
+- Return exactly one alert for each input alert, with the same id.
+```
+
+### User message template
+
+`{{input}}` is replaced by the alerts as compact JSON.
+
+```
+Write the alerts for this input:
+
+{{input}}
+```
+
+Example `{{input}}` for the task's AppointmentAPI result (pretty-printed here):
+
+```json
+{
+  "alerts": [
+    {
+      "id": "6650f0c2a1b2c3d4e5f60718",
+      "apiName": "AppointmentAPI",
+      "severity": "critical",
+      "occurrences": 1,
+      "issues": [
+        {
+          "type": "SERVER_ERROR",
+          "severity": "critical",
+          "detail": "HTTP 500 server error"
+        },
+        {
+          "type": "HIGH_LATENCY",
+          "severity": "critical",
+          "detail": "Response time 5500 ms is above the 5000 ms critical threshold"
+        },
+        {
+          "type": "EMPTY_DATA",
+          "severity": "warning",
+          "detail": "Returned 0 records"
+        }
+      ],
+      "metrics": {
+        "statusCode": 500,
+        "responseTimeMs": 5500,
+        "recordsReturned": 0
+      },
+      "thresholds": {
+        "latencyWarningMs": 2000,
+        "latencyCriticalMs": 5000,
+        "expectRecords": true
+      }
+    }
+  ]
+}
+```
 
 ## Appendix A — BUILD_SPEC.md
 

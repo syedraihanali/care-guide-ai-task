@@ -8,6 +8,7 @@
     "dev": "tsx watch --clear-screen=false src/server.ts",
     "build": "tsc",
     "start": "node --enable-source-maps dist/server.js",
+    "monitor:file": "tsx src/cli/monitorFile.ts",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {

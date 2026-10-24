@@ -45,5 +45,5 @@ Keep the "Runtime LLM prompt" section identical to the system prompt and user-me
 | `npm run dev` | Backend on http://localhost:4000, frontend on http://localhost:5173 |
 | `npm run build` | Builds both workspaces |
 | `npm test` | Runs the tests |
-| `npm run monitor:file -- <path>` | Runs a JSON batch file through the monitor pipeline (added in Phase 2) |
+| `npm run monitor:file -- [path]` | Runs a JSON batch file through the monitor pipeline (default: `sample-data/sample-batch.json`) |
 | `npm run prompts:docx` | Regenerates `AI_Prompts.docx` from `prompts/AI_PROMPTS.md` |
