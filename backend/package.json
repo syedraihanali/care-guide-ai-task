@@ -9,7 +9,7 @@
     "build": "tsc",
     "start": "node --enable-source-maps dist/server.js",
     "monitor:file": "tsx src/cli/monitorFile.ts",
-    "test": "vitest run --passWithNoTests"
+    "test": "tsc -p tests && vitest run"
   },
   "dependencies": {
     "cors": "^2.8.6",

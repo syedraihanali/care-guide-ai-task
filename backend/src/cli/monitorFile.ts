@@ -9,14 +9,17 @@ import { connectToDatabase, disconnectFromDatabase, redactMongoUri } from '../db
 import { AppError } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
 import { runMonitor, type MonitorResult } from '../modules/monitor/monitor.service.js';
+import { pendingDigestEmails } from '../services/notifier/alertEmail.js';
+import type { SentEmail } from '../services/notifier/email.js';
 
 const DEFAULT_FILE = path.resolve(import.meta.dirname, '../../../sample-data/sample-batch.json');
 // npm runs workspace scripts inside backend/, so relative paths are resolved from where npm was started.
 const BASE_DIR = process.env.INIT_CWD ?? process.cwd();
 
 async function main(): Promise<number> {
-  // Keep the output to the summary table: only warnings and errors are logged unless LOG_LEVEL is set.
-  if (!process.env.LOG_LEVEL) logger.level = 'warn';
+  // The summary table is the output, so at the default level only warnings and errors are logged.
+  // LOG_LEVEL=debug shows every log line.
+  if (logger.level === 'info') logger.level = 'warn';
 
   const filePath = process.argv[2] ? path.resolve(BASE_DIR, process.argv[2]) : DEFAULT_FILE;
   let body: unknown;
@@ -36,6 +39,7 @@ async function main(): Promise<number> {
 
   try {
     printSummary(filePath, await runMonitor(body, 'file'));
+    printDigests(await pendingDigestEmails());
     return 0;
   } catch (error) {
     if (!(error instanceof AppError)) throw error;
@@ -43,7 +47,15 @@ async function main(): Promise<number> {
     if (error.details !== undefined) console.error(JSON.stringify(error.details, null, 2));
     return 1;
   } finally {
+    // With EMAIL_ENABLED, a digest email may still be sending, and it reads its alerts from MongoDB.
+    await pendingDigestEmails();
     await disconnectFromDatabase();
+  }
+}
+
+function printDigests(digests: ReadonlyArray<SentEmail | null>): void {
+  for (const sent of digests) {
+    if (sent) console.log(`\nDigest email sent to ${sent.to}.${sent.previewUrl ? ` Preview it at ${sent.previewUrl}` : ''}`);
   }
 }
 
@@ -80,11 +92,18 @@ function stripBom(text: string): string {
 }
 
 main().then(
-  (code) => {
-    process.exitCode = code;
-  },
+  (code) => finish(code),
   (error: unknown) => {
     console.error(error);
-    process.exitCode = 1;
+    finish(1);
   },
 );
+
+/**
+ * Lets the process exit on its own, so every line reaches the terminal. After verbose logging, pino's log transport
+ * can keep the process alive (its worker thread never reports that it closed), so stop waiting after 2 seconds.
+ */
+function finish(code: number): void {
+  process.exitCode = code;
+  setTimeout(() => process.exit(code), 2_000).unref();
+}

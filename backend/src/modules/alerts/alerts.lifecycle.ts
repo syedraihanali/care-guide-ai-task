@@ -8,16 +8,18 @@ import type { Detection } from '../../services/detector.js';
 import { templateAlert } from '../../services/llm/templateAlert.js';
 import type { AlertTextRequest } from '../../services/llm/types.js';
 
+interface ChangedAlert {
+  alert: AlertDocument;
+  /** The alert's current facts, for the LLM writer. */
+  textRequest: AlertTextRequest;
+  /** True when the alert is new, or its issue types changed, or its severity escalated. */
+  needsText: boolean;
+}
+
 export type LifecycleOutcome =
   | { kind: 'unchanged' }
-  | {
-      kind: 'created' | 'updated';
-      alert: AlertDocument;
-      /** The alert's current facts, for the LLM writer. */
-      textRequest: AlertTextRequest;
-      /** True when the alert is new, or its issue types changed, or its severity escalated. */
-      needsText: boolean;
-    }
+  | ({ kind: 'created' } & ChangedAlert)
+  | ({ kind: 'updated'; escalated: boolean } & ChangedAlert)
   | { kind: 'resolved'; alert: AlertDocument };
 
 /** A concurrent batch can open or resolve the same API's alert between our read and write; then we read again. */
@@ -100,7 +102,7 @@ async function updateIncident(
   if (!alert) return null;
 
   const textRequest = toTextRequest(alert.id, detection, alert.severity, alert.occurrences, thresholds);
-  return { kind: 'updated', alert, textRequest, needsText };
+  return { kind: 'updated', alert, textRequest, needsText, escalated };
 }
 
 async function resolveRecovered(apiName: string, now: Date): Promise<LifecycleOutcome> {

@@ -103,6 +103,22 @@ Do Phase 3 (Frontend) from BUILD_SPEC.md. Log this prompt. Make it look clean an
 - Tested the full flow in headless Edge against the running backend in AI mode (48 checks): submit the sample, alerts appear, resolve one, the recovery batch auto-resolves the rest; plus the offline state.
 - After reviewing real AI output, tightened the runtime LLM prompt (no "null", sentence-case titles, complete sentences), then committed.
 
+### Prompt 5 — Phase 4: Email, tests, docs and final check
+
+- **Date and time:** 2026-10-24 22:32 (UTC+06:00)
+- **Phase:** 4 — Email, tests, docs, final check
+
+```
+Do Phase 4 from BUILD_SPEC.md: email report, tests, README, video outline and final verification from a clean state. Log this prompt, regenerate AI_Prompts.docx, commit, and tell me anything I still need to do myself.
+```
+
+**Outcome:**
+
+- Added email with nodemailer: a digest after any batch that opens or escalates critical alerts (with `EMAIL_ENABLED`), `POST /alerts/report/email` with an "Email report" button, and an Ethereal test inbox with preview links when SMTP isn't set. Email failures are only logged.
+- Added 96 Vitest tests, run by the root `npm test`: detector rules, thresholds, combinations and overrides; input normalization and validation; the alert writer's fallback with a mocked OpenAI client; templates, email rendering, and a digest that never fails a batch.
+- Wrote README.md (with dashboard screenshots) and docs/video-outline.md. While verifying, fixed the file CLI: it now waits for the digest email and prints its link, stays quiet at the default log level, and always exits (pino's log transport could keep it running).
+- Verified from a clean export of the repository: `npm ci`, build, tests, the file CLI, curl, and the full demo flow in headless Edge in template mode (15 checks, including the Ethereal email preview). The same flow passed in AI mode in the working copy. Then committed.
+
 ## Runtime LLM prompt
 
 The backend sends this to the OpenAI Chat Completions API for every alert that needs text (`backend/src/services/llm/prompts.ts`):

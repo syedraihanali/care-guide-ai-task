@@ -4,6 +4,7 @@ import { config } from './config/env.js';
 import { connectToDatabase, disconnectFromDatabase, redactMongoUri } from './db/mongoose.js';
 import { exitAfterFlush, logger } from './lib/logger.js';
 import { alertWriter } from './services/llm/alertWriter.js';
+import { pendingDigestEmails } from './services/notifier/alertEmail.js';
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
@@ -19,6 +20,11 @@ async function start(): Promise<void> {
       corsOrigins: config.corsOrigins,
       llm: { mode: alertWriter.mode, model: config.llm.model, timeoutMs: config.llm.timeoutMs, batchSize: config.llm.batchSize },
       monitor: config.monitor,
+      email: {
+        digest: config.email.enabled,
+        transport: config.email.smtp.host ? 'smtp' : 'ethereal test inbox',
+        to: config.email.to ?? null,
+      },
       logLevel: config.logLevel,
     },
     'Starting the API monitor backend',
@@ -48,7 +54,7 @@ async function start(): Promise<void> {
   });
 }
 
-/** Stops accepting requests, lets in-flight ones finish, then closes MongoDB. */
+/** Stops accepting requests, lets in-flight ones and digest emails finish, then closes MongoDB. */
 async function shutdown(exitCode: number): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
@@ -63,6 +69,7 @@ async function shutdown(exitCode: number): Promise<void> {
   let code = exitCode;
   try {
     if (server) await closeServer(server);
+    await pendingDigestEmails();
     await disconnectFromDatabase();
   } catch (error) {
     logger.error({ err: error }, 'Error during shutdown');

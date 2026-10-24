@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { alertIdParamsSchema, listAlertsQuerySchema } from './alerts.schema.js';
-import { getAlert, getAlertStats, listAlerts, resolveAlert } from './alerts.service.js';
+import { emailActiveAlertsReport, getAlert, getAlertStats, listAlerts, resolveAlert } from './alerts.service.js';
 
 // Inputs are parsed with zod here; a ZodError becomes a 400 VALIDATION_ERROR in the error handler.
 
@@ -20,4 +20,8 @@ export async function getAlertHandler(req: Request, res: Response): Promise<void
 export async function resolveAlertHandler(req: Request, res: Response): Promise<void> {
   const { id } = alertIdParamsSchema.parse(req.params);
   res.json(await resolveAlert(id));
+}
+
+export async function emailReportHandler(_req: Request, res: Response): Promise<void> {
+  res.json(await emailActiveAlertsReport());
 }

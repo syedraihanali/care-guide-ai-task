@@ -10,6 +10,7 @@ import { ApiCheck, type ApiCheckAttrs } from '../../models/apiCheck.model.js';
 import { MonitorRun } from '../../models/monitorRun.model.js';
 import { detect } from '../../services/detector.js';
 import { alertWriter, type AlertWriter, type WrittenAlertText } from '../../services/llm/alertWriter.js';
+import { sendCriticalDigest } from '../../services/notifier/alertEmail.js';
 import type { AlertTextRequest } from '../../services/llm/types.js';
 import { applyCheck } from '../alerts/alerts.lifecycle.js';
 import { normalizeBatch, parseItems, type InvalidItem, type ValidItem } from './monitor.schema.js';
@@ -57,6 +58,8 @@ export async function runMonitor(
   const results = new Map<number, CheckResult>();
   const checks = new Map<number, ApiCheckAttrs>();
   const textRequests = new Map<string, AlertTextRequest>();
+  /** New or escalated critical alerts, for the digest email. */
+  const newCritical = new Set<string>();
   const alerts = { created: 0, updated: 0, autoResolved: 0 };
 
   const processApi = async (apiItems: readonly ValidItem[]) => {
@@ -75,9 +78,12 @@ export async function runMonitor(
         if (outcome.needsText || textRequests.has(outcome.textRequest.id)) {
           textRequests.set(outcome.textRequest.id, outcome.textRequest);
         }
+        const becameCritical = outcome.kind === 'created' || outcome.escalated;
+        if (becameCritical && outcome.alert.severity === 'critical') newCritical.add(outcome.alert.id);
       } else if (outcome.kind === 'resolved') {
         alerts.autoResolved += 1;
         textRequests.delete(outcome.alert.id);
+        newCritical.delete(outcome.alert.id);
       }
     }
   };
@@ -90,6 +96,8 @@ export async function runMonitor(
 
   const { texts, stats } = await writer.write([...textRequests.values()]);
   await saveGeneratedTexts(texts);
+  // Not awaited: the email must neither slow nor break the batch, and it logs its own outcome.
+  if (config.email.enabled && newCritical.size > 0) void sendCriticalDigest([...newCritical]);
 
   const ordered = inInputOrder(results);
   const healthy = ordered.filter((result) => result.healthy).length;

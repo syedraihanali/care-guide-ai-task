@@ -95,6 +95,15 @@ export interface Health {
   uptimeSec: number
 }
 
+export interface EmailReportResult {
+  sent: true
+  alerts: number
+  to: string
+  messageId: string
+  /** Ethereal web preview of the email; null when it went through real SMTP. */
+  previewUrl: string | null
+}
+
 export interface InvalidItem {
   index: number
   reason: string

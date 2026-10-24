@@ -1,10 +1,11 @@
 import { useIsFetching, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
-import { ActivityIcon, FileTextIcon, PlayIcon, RefreshCwIcon, SparklesIcon } from 'lucide-react'
+import { ActivityIcon, FileTextIcon, Loader2Icon, MailIcon, PlayIcon, RefreshCwIcon, SparklesIcon } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAlertStats, useApiStatuses, useHealth } from '@/hooks/use-dashboard-queries'
+import { useEmailReport } from '@/hooks/use-email-report'
 import { useNow } from '@/hooks/use-now'
 import { API_URL } from '@/lib/api'
 import { timeAgo } from '@/lib/format'
@@ -17,6 +18,7 @@ export function AppHeader({ onRunCheck }: { onRunCheck: () => void }) {
   const health = useHealth()
   const stats = useAlertStats()
   const apis = useApiStatuses()
+  const emailReport = useEmailReport()
   const now = useNow(1_000)
   const updatedAt = Math.max(health.dataUpdatedAt, stats.dataUpdatedAt, apis.dataUpdatedAt)
 
@@ -46,7 +48,21 @@ export function AppHeader({ onRunCheck }: { onRunCheck: () => void }) {
             <RefreshCwIcon className={cn(fetching && 'animate-spin motion-reduce:animate-none')} />
           </Button>
           <ThemeToggle />
-          <Button onClick={onRunCheck} className="ml-1">
+          <Button
+            variant="outline"
+            onClick={() => emailReport.mutate()}
+            disabled={emailReport.isPending}
+            className="ml-1"
+            title="Email a report of all active alerts"
+          >
+            {emailReport.isPending ? (
+              <Loader2Icon data-icon="inline-start" className="animate-spin motion-reduce:animate-none" />
+            ) : (
+              <MailIcon data-icon="inline-start" />
+            )}
+            <span className="sr-only md:not-sr-only">Email report</span>
+          </Button>
+          <Button onClick={onRunCheck}>
             <PlayIcon data-icon="inline-start" />
             <span className="sr-only sm:not-sr-only">Run a check</span>
           </Button>
@@ -85,7 +101,7 @@ function LlmModeBadge({ health }: { health: Health | undefined }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Badge variant="outline" tabIndex={0} className="hidden cursor-default sm:inline-flex">
+        <Badge variant="outline" tabIndex={0} className="hidden cursor-default md:inline-flex">
           {ai ? <SparklesIcon /> : <FileTextIcon />}
           {ai ? `AI · ${health.model}` : 'Template mode'}
         </Badge>

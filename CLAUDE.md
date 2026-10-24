@@ -45,8 +45,9 @@ Keep the "Runtime LLM prompt" section identical to the system prompt and user-me
 |---|---|
 | `npm install` | Installs every workspace |
 | `npm run db:up` / `npm run db:down` | Starts / stops MongoDB 7 in Docker |
+| `npm run db:reset` | Deletes all local monitoring data and starts a fresh MongoDB (stop `npm run dev` first) |
 | `npm run dev` | Backend on http://localhost:4000, frontend on http://localhost:5173 |
 | `npm run build` | Builds both workspaces |
-| `npm test` | Runs the tests |
+| `npm test` | Type-checks and runs the backend Vitest suites in `backend/tests/` (they ignore `backend/.env`) |
 | `npm run monitor:file -- [path]` | Runs a JSON batch file through the monitor pipeline (default: `sample-data/sample-batch.json`) |
 | `npm run prompts:docx` | Regenerates `AI_Prompts.docx` from `prompts/AI_PROMPTS.md` |

@@ -1,8 +1,9 @@
 import type { AlertSeverity } from '../../domain/monitoring.js';
-import { notFoundError } from '../../lib/errors.js';
+import { AppError, notFoundError } from '../../lib/errors.js';
 import { logger } from '../../lib/logger.js';
 import { Alert, type AlertDocument } from '../../models/alert.model.js';
 import { ApiCheck } from '../../models/apiCheck.model.js';
+import { sendAlertEmail } from '../../services/notifier/alertEmail.js';
 import type { ListAlertsQuery } from './alerts.schema.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -73,6 +74,26 @@ export async function resolveAlert(id: string): Promise<AlertDocument> {
     return resolved;
   }
   return getAlert(id);
+}
+
+export interface EmailReportResult {
+  sent: true;
+  alerts: number;
+  to: string;
+  messageId: string;
+  previewUrl: string | null;
+}
+
+/** Emails a report of every active alert, on demand. Works with real SMTP or an Ethereal test inbox. */
+export async function emailActiveAlertsReport(): Promise<EmailReportResult> {
+  const alerts = await Alert.find({ status: 'active' }).sort({ severity: 1, lastSeen: -1, _id: -1 });
+  try {
+    const { to, messageId, previewUrl } = await sendAlertEmail('report', alerts);
+    return { sent: true, alerts: alerts.length, to, messageId, previewUrl };
+  } catch (error) {
+    logger.warn({ err: error }, 'Could not send the alerts report email');
+    throw new AppError(502, 'EMAIL_FAILED', `The report email could not be sent: ${(error as Error).message}`);
+  }
 }
 
 /** Makes user input safe to embed in a regular expression. */

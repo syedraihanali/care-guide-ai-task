@@ -4,7 +4,10 @@ import { z } from 'zod';
 import { blankToUndefined } from '../lib/validation.js';
 
 // backend/.env, located relative to this file so it loads whatever the working directory is.
-dotenv.config({ path: path.resolve(import.meta.dirname, '../../.env'), quiet: true });
+// Tests skip it: they run on the defaults, whatever a developer's .env contains.
+if (process.env.NODE_ENV !== 'test') {
+  dotenv.config({ path: path.resolve(import.meta.dirname, '../../.env'), quiet: true });
+}
 
 /** Every variable is optional: a missing or blank value falls back to its default. */
 const optional = <T extends z.ZodType>(schema: T) => z.preprocess(blankToUndefined, schema);

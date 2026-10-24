@@ -4,6 +4,7 @@ import type {
   AlertQuery,
   AlertStats,
   ApiStatus,
+  EmailReportResult,
   Health,
   MonitorResult,
 } from '@/types'
@@ -90,4 +91,5 @@ export const api = {
   resolveAlert: (id: string) => request<Alert>(`/alerts/${encodeURIComponent(id)}/resolve`, { method: 'PATCH' }),
   runMonitor: (batch: unknown) =>
     request<MonitorResult>('/monitor', { method: 'POST', body: JSON.stringify(batch) }),
+  emailReport: () => request<EmailReportResult>('/alerts/report/email', { method: 'POST' }),
 }
